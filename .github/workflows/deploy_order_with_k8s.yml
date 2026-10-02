@@ -1,0 +1,51 @@
+#.hwp파일에 주석 있으니 참고
+
+name: deploy order order-backend
+
+on:
+  push:
+    branches:
+      - main #dev->main으로 변경
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest #runner
+    steps:
+      - name: checkout github
+        uses: actions/checkout@v2 #uses에 들어가는 value는 github action에 이미 지정되어있는 코드이므로, 필요하면 검색해서 사용해야한다.
+      
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.25.9"
+        id: install
+        
+      - name: configure aws
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY }}
+          aws-secret-access-key:  ${{ secrets.AWS_SECRET }}
+          aws-region: ap-northeast-2
+
+      - name: update cluster infomation
+        run: aws eks update-kubeconfig --name  my-cluster --region ap-northeast-2 #run : 뒤에는 명령어 직접 입력해야함.
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: build and push docker image to ecr
+        env:
+          REGISTRY: 193644343848.dkr.ecr.ap-northeast-2.amazonaws.com
+          REPOSITORY: order-backend
+          IMAGE_TAG: latest
+        run: |
+          docker build \
+          -t $REGISTRY/$REPOSITORY:$IMAGE_TAG \
+          -f ./monolithic/Dockerfile ./monolithic
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+
+      - name: eks kubectl apply
+        run: |
+          kubectl rollout restart deployment ordersystem-backend -n soldesk
+        # kubectl apply -f ./monolithic/k8s/k8s-ordersystem/depl_svc.yml
