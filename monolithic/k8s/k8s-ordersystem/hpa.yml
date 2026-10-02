@@ -1,4 +1,4 @@
-# 메트릭 서버 설치
+# 메트릭 서버 설치 -> AWS콘솔에서 Cluster생성 시 EKS비활성화해주면 자동으로 설치할 파드(?)선택되서 그 안에 포함되어있음. 안깔아도됨
 # kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
 apiVersion: autoscaling/v1
@@ -13,7 +13,7 @@ spec:
     name: ordersystem-backend
   minReplicas: 2
   maxReplicas: 10
-  targetCPUUtilizationPercentage: 30
+  targetCPUUtilizationPercentage: 50
 
 # 메트릭 서버와 HPA를 통한 pod 현황 조회
 # kubectl get hpa ordersystem-backend-hpa -n soldesk -w
